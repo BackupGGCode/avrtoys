@@ -1,0 +1,88 @@
+digraph Steps {
+    size="7.5,10.5"
+    margin="0.5"
+    ratio=fill
+    fontsize=9
+
+    node [shape="box" fontsize="8"]
+    edge [fontsize="8"]
+
+    init_play_sequence
+
+    subgraph cluster_init {
+        label="Init sequenses"
+
+        mcu_init -> pwm_init -> mmc_init -> mmc_not_found
+
+        mmc_not_found [shape=diamond]
+
+        mmc_not_found -> led_info_mmc_not_found [label="Yes"]
+        led_info_mmc_not_found -> mcu_init
+        led_info_mmc_not_found [shape=ellipse]
+
+        mmc_not_found -> mmc_init_fat [label="No"]
+
+        mmc_error_fat [shape=diamond]
+        mmc_init_fat -> mmc_error_fat
+
+        mmc_error_fat -> led_info_mmc_error_fat [label="Yes"]
+        led_info_mmc_error_fat -> mcu_init
+        led_info_mmc_error_fat [shape=ellipse]
+
+        mmc_error_fat -> init_play_sequence [label="No"]
+    }
+
+
+    subgraph cluster_samples {
+        label="Get samples from MMC"
+        get_sample
+        next_sample
+        push_sample [shape=diamond]
+
+        get_sample -> push_sample
+        push_sample -> next_sample [label="Pushed"]
+    }
+
+    init_play_sequence -> get_sample
+
+    subgraph cluster_keys {
+        label="Check control keys"
+        get_keys [shape=diamond]
+
+        play_stop [shape="diamond"]
+
+        get_keys -> play_stop [label="1. Play/Stop"]
+    }
+
+    subgraph cluster_actions {
+        label="Actions"
+        play
+        stop
+        next
+        prev
+    }
+
+    play_stop -> play [label="If stopped"]
+    play_stop -> stop [label="If played"]
+    get_keys -> get_keys [label="2. If stopped"]
+    get_keys -> next [label="3. Next"]
+    get_keys -> prev [label="4. Prev"]
+
+    push_sample -> get_keys [label="Overflow"]
+    next_sample -> get_keys
+
+    play -> get_sample
+    stop -> get_keys
+    next -> init_play_sequence
+    prev -> init_play_sequence
+
+
+    subgraph cluster_playing {
+        label="Play from FIFO to PWM"
+        sample_to_pwm [shape=ellipse]
+        pop_sample -> sample_to_pwm ->  wait_sample_rate -> pop_sample
+    }
+
+    push_sample -> pop_sample [style=dashed label="FIFO"]
+}
+
