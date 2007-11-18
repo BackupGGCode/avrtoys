@@ -100,18 +100,24 @@ uint16_t crc16(uint16_t crc, uint8_t data)
 
 #define MMC_CMD0  (0x40 | 0)
 #define MMC_CMD1  (0x40 | 1)
+// Set block len
+#define MMC_CMD16 (0x40 | 16)
 #define MMC_CMD17 (0x40 | 17)
 
+#define MMC_SEC_SIZE 512
+
+/**
+ * Latest MMC responce
+ */
+uint8_t mmcResp;
 
 /**
  * mmcSend - send command to card
  * CS after command and get response not deactivated.
  * cmd - command code.
  */
-uint8_t mmcSend(uint8_t cmd, uint32_t parm)
+void mmcSend(uint8_t cmd, uint32_t parm)
 {
-    uint8_t resp;
-
     MMC_SEL;
     sendSpi(cmd);
     sendSpi((parm & 0xFF000000) >> 24);
@@ -120,18 +126,14 @@ uint8_t mmcSend(uint8_t cmd, uint32_t parm)
     sendSpi((parm & 0xFF) >> 0);
     sendSpi(0x95); // dummy CRC7. Already 0x95 (needed for MMC_CMD0)
     
-    while((resp = sendSpi(0xFF)) == 0xFF); // Wait for response
-
-    return(resp);
+    while((mmcResp = sendSpi(0xFF)) == 0xFF); // Wait for response
 }
 
 void mmcInit(void)
 {
-    uint8_t resp;
-
     // Send more than 74 clocks to MMC
     MMC_UNSEL;
-    for(resp = 0; resp < 10; resp++)
+    for(uint8_t i = 0; i < 10; i++)
         sendSpi(0xFF);
 
     mmcSend(MMC_CMD0, 0); // CMD0 - reset
@@ -139,31 +141,153 @@ void mmcInit(void)
 
     do {
         // MMC_CMD1 init
-        resp = mmcSend(MMC_CMD1, 0); // Get card responce
+        mmcSend(MMC_CMD1, 0); // Get card responce
         MMC_UNSEL;
-    } while(resp & _B(MMC_RESP_IDLE));
+    } while(mmcResp & _B(MMC_RESP_IDLE));
 }
 
-void mmcRead(uint32_t address)
+#define mmcBlockLen(len) { mmcSend(MMC_CMD16, len); MMC_UNSEL; }
+
+/**
+ * Initialize read data from mmc
+ * After all read sequences must be execute MMC_UNSEL
+ */
+uint8_t mmcRead(void* dst, uint32_t srcAddr, uint16_t len)
 {
-    uint8_t resp;
-
     // MMC_CMD17
-    if((resp = mmcSend(MMC_CMD17, address)) == 0x00) // If no errors
+    mmcSend(MMC_CMD17, srcAddr);
+    if(mmcResp == 0x00) // If no errors
     {
-        while(sendSpi(0xFF) != 0xFE); // Wait for data token
+        while((mmcResp = sendSpi(0xFF)) == 0xFF); // Wait for data token
 
-        // Read sector - 512 bytes
-        for(uint16_t i = 0; i < 0x200; i++)
+        if(mmcResp == 0xFE) // No errors
         {
-            resp = sendSpi(0xFF);
-            uartPut(resp);
+            // Read sector - 512 bytes
+            do
+            {
+                *((uint8_t*)dst) = sendSpi(0xFF); // Read into mmcResp
+                dst++;
+            }
+            while((--len)>0);
+            return(0); // No errors
         }
+        return(mmcResp | 0x80); // If 7th bit is set, is on read error
     }
-    MMC_UNSEL;
-
+    return(mmcResp);
 }
 
+
+/**
+ * Countinue mmcRead
+ */
+void mmcReadCnt(void *dst, uint16_t len)
+{
+    do
+    {
+        *((uint8_t*)dst) = sendSpi(0xFF); // Read into mmcResp
+        dst++;
+    }
+    while((--len)>0);
+}
+
+void mmcReadDummy(uint16_t len)
+{
+    do
+    {
+        sendSpi(0xFF); // Dummy read
+    }
+    while((--len)>0);
+}
+
+uint16_t mmcReadCRC(void)
+{
+    uint16_t crc16 = (sendSpi(0xFF) << 8);
+    crc16 |= sendSpi(0xFF);
+    MMC_UNSEL;
+    return(crc16);
+}
+
+
+#define mmcClosedRead(dst, srcAddr, len) { mmcRead(dst, srcAddr, len); MMC_UNSEL; }
+#define mmcClosedReadCnt(dst, len) { mmcReadCnt(dst, len); MMC_UNSEL; }
+
+#define FAT_ROOT_ENTRY_SIZE 32
+
+#define FAT_ATTR_RO         0x01
+#define FAT_ATTR_HIDDEN     0x02
+#define FAT_ATTR_SYSTEM     0x04
+#define FAT_ATTR_LABEL      0x08
+#define FAT_ATTR_DIRECTORY  0x10
+#define FAT_ATTR_ARCHIVE    0x20
+
+typedef struct {
+    char name[8];
+    char ext[3];
+    uint8_t attr;
+    char reserved[10];
+    uint16_t time; // Time 5/6/5 bits, for hour/minutes/doubleseconds
+    uint16_t date; // Date 7/4/5 bits, for year-1980/month/day
+    uint16_t cluster; // Starting cluster. 0 - empty file
+    uint32_t filesize; // in bytes
+} directoryEntry;
+
+typedef directoryEntry* pDirectoryEntry;
+
+uint8_t secPerCluster;
+uint16_t rootDirEntries;
+uint16_t fatsize;
+
+uint32_t fatOffset;
+uint32_t rootDirOffset;
+uint32_t zeroClusterOffset;
+
+void fatInit(void)
+{
+    uint16_t bytePerSec;
+
+    uint32_t partition;
+    uint16_t reservedSects; // PBR Reserved sectors
+    uint8_t fats;
+
+    mmcBlockLen(4);
+    mmcRead(&partition, 0x01BE + 0x08, 4); // Read number of sectros between the MBR and the first sector in the partition
+    mmcReadCRC();
+
+    partition *= MMC_SEC_SIZE; // Sectors to linear. Sector on MMC alway 512 bytes
+
+    mmcBlockLen(8);
+    mmcRead(&bytePerSec, partition+11, 2); // Read bytes per sector from PBR
+
+    mmcReadCnt(&secPerCluster, 1); // Read sectors per cluster
+    mmcReadCnt(&reservedSects, 2);
+    mmcReadCnt(&fats, 1); // Number of FAT copies
+    mmcReadCnt(&rootDirEntries, 2);
+    mmcReadCRC();
+    
+    mmcBlockLen(2);
+    mmcRead(&fatsize, partition+22, 2);
+    mmcReadCRC();
+
+    fatOffset = partition + reservedSects * MMC_SEC_SIZE;
+    rootDirOffset = fatOffset + (uint32_t)fatsize * fats * MMC_SEC_SIZE;
+    zeroClusterOffset = rootDirOffset + (uint32_t)rootDirEntries*FAT_ROOT_ENTRY_SIZE; // - (uint32_t)secPerCluster*MMC_SEC_SIZE*2;
+}
+
+uint16_t fatCurrentEntryCnt = 0;
+directoryEntry fatCurrentEntry;
+
+uint16_t fatReadNextEntry(void)
+{
+    if(fatCurrentEntryCnt >= rootDirEntries)
+        return(0xFFFF);
+
+    mmcBlockLen(32);
+    mmcRead(&fatCurrentEntry, rootDirOffset + (uint32_t)fatCurrentEntryCnt*FAT_ROOT_ENTRY_SIZE, 32);
+    mmcReadCRC();
+
+    fatCurrentEntryCnt++;
+    return(fatCurrentEntryCnt);
+}
 
 int main(void)
 {
@@ -191,7 +315,23 @@ int main(void)
     uartInit(UART9600);
 
     mmcInit();
-    mmcRead(0);
+    fatInit();
+
+    uint16_t e;
+    uint8_t i;
+    while(fatReadNextEntry() != 0xFFFF)
+    {
+        if((fatCurrentEntry.name[0] >= 32) &&
+          ((fatCurrentEntry.attr & (FAT_ATTR_HIDDEN | FAT_ATTR_SYSTEM | FAT_ATTR_LABEL | FAT_ATTR_DIRECTORY)) == 0))
+        {
+            for(i=0; i<8; i++)
+                uartPut(fatCurrentEntry.name[i]);
+            uartPut('.');
+            for(i=0; i<3; i++)
+                uartPut(fatCurrentEntry.ext[i]);
+            uartPut('\n');
+        }
+    }
     LED1ON;
 
     while(1)

@@ -45,5 +45,9 @@ uint8_t uartGet(void);
 
 void uartPut(uint8_t data);
 
+#define uart16(u16) { uartPut((u16) & 0xFF); uartPut(((u16) & 0xFF00) >> 8); }
+#define uart32(u32) { uartPut((u32) & 0xFF); uartPut(((u32) & 0xFF00) >> 8); \
+                      uartPut(((u32) & 0xFF0000) >> 16); uartPut(((u32) & 0xFF000000) >> 24); }
+
 #endif   /* ----- #ifndef UART_FILE_HEADER_INC  ----- */
 
