@@ -20,6 +20,7 @@
 
 #include <avr/wdt.h>
 #include <avr/pgmspace.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
 #include <string.h>
 
@@ -289,6 +290,69 @@ uint16_t fatReadNextEntry(void)
     return(fatCurrentEntryCnt);
 }
 
+// FIFO buffer
+
+uint8_t fifoBuffer[16];
+volatile uint8_t fifoHead = 0; // Pushed here
+volatile uint8_t fifoTail = 0; // Poped here
+
+uint8_t fifoPush(uint8_t val)
+{
+    if(((fifoHead+1) & 0x0F) != fifoTail)
+    {
+        // Buffer is not full
+        fifoBuffer[fifoHead] = val;
+        fifoHead = (fifoHead+1) & 0x0F;
+        return(0);
+    }
+    else // Buffer is full
+        return(0xFF);
+}
+
+uint8_t fifoWaitPush(uint8_t val)
+{
+    while(((fifoHead+1) & 0x0F) == fifoTail);
+    // Buffer is not full
+    fifoBuffer[fifoHead] = val;
+    fifoHead = (fifoHead+1) & 0x0F;
+}
+
+/*
+uint8_t fifoPop(void)
+{
+    uint8_t val;
+    if(fifoTail != fifoHead)
+    {
+        val = fifoBuffer[fifoTail];
+        fifoTail = (fifoTail+1) & 0x0F;
+        return(val);
+    }
+    else
+        return(0);
+}
+*/
+
+#define DELAY_COEF 3
+
+uint8_t timerDelay = DELAY_COEF;
+
+ISR(SIG_OVERFLOW0)
+{
+    if(!timerDelay)
+    {
+        if(fifoTail != fifoHead)
+        {
+            OCR0A = fifoBuffer[fifoTail];
+            fifoTail = (fifoTail+1) & 0x0F;
+        }
+        else
+            OCR0A = 128;
+        timerDelay = DELAY_COEF;
+    }
+    else
+        timerDelay--;
+}
+
 int main(void)
 {
     // OSCCAL = 0x6D;
@@ -311,31 +375,77 @@ int main(void)
     TCCR0A = (2<<COM0A0) | (3<<COM0B0) | (3<<WGM00);
     TCCR0B = (0<<WGM02) | (1<<CS00);
 
+    // Interrupts
+    TIMSK = _B(TOIE0);
+
     // Init  Uart
     uartInit(UART9600);
 
     mmcInit();
     fatInit();
 
-    uint16_t e;
+    sei();
+    // Main loop
+
+    //uint16_t e;
     uint8_t i;
     while(fatReadNextEntry() != 0xFFFF)
     {
         if((fatCurrentEntry.name[0] >= 32) &&
           ((fatCurrentEntry.attr & (FAT_ATTR_HIDDEN | FAT_ATTR_SYSTEM | FAT_ATTR_LABEL | FAT_ATTR_DIRECTORY)) == 0))
         {
+            if(fatCurrentEntry.ext[0] = 'S')
+                break;
+            /*
             for(i=0; i<8; i++)
                 uartPut(fatCurrentEntry.name[i]);
             uartPut('.');
             for(i=0; i<3; i++)
                 uartPut(fatCurrentEntry.ext[i]);
             uartPut('\n');
+            */
         }
     }
     LED1ON;
+    for(i=0; i<8; i++)
+        uartPut(fatCurrentEntry.name[i]);
+    uartPut('\n');
+
+    uint16_t currentCluster = fatCurrentEntry.cluster;
+
+    uint8_t sec;
+    uint16_t addr;
 
     while(1)
     {
+        mmcBlockLen(MMC_SEC_SIZE);
+        for(sec=0; sec<secPerCluster; sec++)
+        {
+            mmcSend(MMC_CMD17, zeroClusterOffset + ((uint32_t)currentCluster*secPerCluster + sec)*MMC_SEC_SIZE);
+            if(mmcResp == 0x00) // If no errors
+            {
+                while((mmcResp = sendSpi(0xFF)) == 0xFF); // Wait for data token
+
+                if(mmcResp == 0xFE) // No errors
+                {
+                    // Read sector - 512 bytes
+                    for(uint16_t addr = 0; addr < MMC_SEC_SIZE; addr++)
+                        fifoWaitPush(sendSpi(0xFF));
+                    mmcReadCRC();
+                }
+            }
+            MMC_UNSEL;
+        }
+        if(currentCluster >= 0xFFF8)
+        {
+            currentCluster = fatCurrentEntry.cluster;
+        }
+        else
+        {
+            mmcBlockLen(2);
+            mmcRead(&currentCluster, fatOffset + (uint32_t)currentCluster*2, 2);
+            mmcReadCRC();
+        }
     }
 }
 
