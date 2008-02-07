@@ -1,0 +1,2 @@
+hcitool scan
+
