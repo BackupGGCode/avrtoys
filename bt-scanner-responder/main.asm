@@ -15,19 +15,19 @@
 
 
 .macro lredOn
-    sbi     PORTB, LRED
-.endm
-
-.macro lredOff
     cbi     PORTB, LRED
 .endm
 
+.macro lredOff
+    sbi     PORTB, LRED
+.endm
+
 .macro lgreenOn
-    sbi     PORTB, LGREEN
+    cbi     PORTB, LGREEN
 .endm
 
 .macro lgreenOff
-    cbi     PORTB, LGREEN
+    sbi     PORTB, LGREEN
 .endm
 
 
