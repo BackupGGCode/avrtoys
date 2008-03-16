@@ -332,7 +332,12 @@ uint8_t fifoPop(void)
 }
 */
 
-#define DELAY_COEF 3
+
+/**
+ * DELAY_COEF 3 - ~8000hz
+ * DELAY_COEF 1 - ~16000hz
+ */
+#define DELAY_COEF 1
 
 uint8_t timerDelay = DELAY_COEF;
 
