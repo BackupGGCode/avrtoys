@@ -38,10 +38,12 @@
 # MCU name
 MCU = attiny2313
 
-#LFUSE = 0xE4
-LFUSE = 0xCC
-HFUSE = 0xDD
+LFUSE = 0xE4
+HFUSE = 0xDB
 EFUSE = 0xFF
+#LFUSE = 0xCC
+#HFUSE = 0xDD
+#EFUSE = 0xFF
 
 # Processor frequency.
 #     This will define a symbol, F_CPU, in all source code files equal to the
@@ -49,9 +51,8 @@ EFUSE = 0xFF
 #     calculate timings. Do NOT tack on a 'UL' at the end, this will be done
 #     automatically to create a 32-bit value in your source code.
 #F_CPU = 3686400
-F_CPU = 7372800
-#F_CPU = 8000000
-#F_CPU = 8000000
+#F_CPU = 7372800
+F_CPU = 8000000
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex 
@@ -169,12 +170,17 @@ AVRDUDE_FUSE_PROGRAMMER = stk500v2
 AVRDUDE_PORT = /dev/ttyUSB0
 AVRDUDE_BITRATE = 115200
 
+AVRDUDE_PROGRAMMER2 = stk200
+AVRDUDE_FUSE_PROGRAMMER2 = stk200
+AVRDUDE_PORT2 = /dev/parport0
+
 AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
 #AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(TARGET).eep
 
 AVRDUDE_WRITE_FUSE = -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m -U efuse:w:$(EFUSE):m
 
 AVRDUDE_FLAGS = -p $(MCU) -P $(AVRDUDE_PORT) -b $(AVRDUDE_BITRATE) -B 2
+AVRDUDE_FLAGS2 = -p $(MCU) -P $(AVRDUDE_PORT2) 
 
 # Uncomment the following if you want avrdude's erase cycle counter.
 # Note that this counter needs to be initialized first using -Yn,
@@ -314,6 +320,13 @@ extcoff: $(TARGET).elf
 
 
 
+
+# Program the device.  
+program2: $(TARGET).hex $(TARGET).eep
+	$(AVRDUDE) $(AVRDUDE_FLAGS2) -c $(AVRDUDE_PROGRAMMER2) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
+
+fuse2:
+	$(AVRDUDE) $(AVRDUDE_FLAGS2) -c $(AVRDUDE_FUSE_PROGRAMMER2) $(AVRDUDE_WRITE_FUSE)
 
 # Program the device.  
 program: $(TARGET).hex $(TARGET).eep

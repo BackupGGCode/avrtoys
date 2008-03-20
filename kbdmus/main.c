@@ -70,8 +70,8 @@ uint8_t fifo_pop(void)
 #   define KPORT    PORTB
 #   define KDDR     DDRB
 #   define KPIN     PINB
-#   define KDATA    PB3
-#   define KCLK     PB4
+#   define KDATA    PB0
+#   define KCLK     PB1
 #endif
 #define KMASK   _B(KDATA) | _B(KCLK)
 
@@ -339,11 +339,11 @@ int main(void)
     PORTB = 0x00;
     DDRB  = 0x00 | _B(PB2); // All inputs
 
-    _SET(KPORT, 0, KMASK);
-    _SET(KDDR, 0, KMASK);
+    /*_SET(KPORT, 0, KMASK);*/
+    /*_SET(KDDR, 0, KMASK);*/
 
     // Init PC interrupts
-    PCMSK = _B(KCLK); // all pins enabled
+    PCMSK = _B(KCLK); 
     MCUCR = 0; // (0x02<<ISC10); // On INT1 falling edge
     GIMSK = _B(PCIE);
 
@@ -359,7 +359,7 @@ int main(void)
 #endif
 
 #ifdef TN2313
-    uartInit(UART115200);
+    uartInit(UART9600);
 #endif
 
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
