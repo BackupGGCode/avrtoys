@@ -22,7 +22,7 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include <util/delay.h>
-#include <util/delay_basic.h>
+//#include <util/delay_basic.h>
 #include <string.h>
 
 #ifdef ENUART
@@ -317,7 +317,7 @@ void send_morse(uint8_t scancode)
     }
 }
 
-uint8_t allow_power_down = 0;
+uint8_t allow_power_down = 1;
 int main(void)
 {
     // OSCCAL = 0x6D;
@@ -381,9 +381,12 @@ int main(void)
     delay_ms(500);
     send_byte(0xFF); // Reset
     delay_ms(500); // Wait kbd reset
+    
+    uartPut(0xaa);
+    uartPut(0x55);
 
     send_byte(KBDCMD_LED); // Set leds
-    send_byte(KBDLED_SCROLL);
+    send_byte(0);
     
     while(1)
     {
