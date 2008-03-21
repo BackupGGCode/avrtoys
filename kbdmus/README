@@ -10,3 +10,10 @@ PB4 - CLK - синхроимпульсы с клавиатуры. Подтяги
 
 
 Используйте для сборки avr-libc версии не ниже 1.6
+
+
+Подробности на http://code.google.com/p/avrtoys/
+
+
+(L) 2008 Ivan "plumbum" A-R <ivan@alferov.name>
+
