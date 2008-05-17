@@ -175,8 +175,6 @@
  *  @name Functions
  */
 
-extern void lcd_write(uint8_t data,uint8_t rs);
-
 
 /**
  @brief    Initialize display and select type of cursor

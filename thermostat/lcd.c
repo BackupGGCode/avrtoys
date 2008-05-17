@@ -132,9 +132,10 @@ Input:    data   byte to write to LCD
 Returns:  none
 *************************************************************************/
 #if LCD_IO_MODE
-void lcd_write(uint8_t data,uint8_t rs) 
+/*static void lcd_write(uint8_t data,uint8_t rs) */
+static void lcd_write(uint8_t data,uint8_t rs) 
 {
-    unsigned char dataBits ;
+    uint8_t dataBits ;
 
 
     if (rs) {   /* write data        (RS=1, RW=0) */
@@ -144,60 +145,21 @@ void lcd_write(uint8_t data,uint8_t rs)
     }
     lcd_rw_low();
 
-    if ( ( &LCD_DATA0_PORT == &LCD_DATA1_PORT) && ( &LCD_DATA1_PORT == &LCD_DATA2_PORT ) && ( &LCD_DATA2_PORT == &LCD_DATA3_PORT )
-      && (LCD_DATA0_PIN == 0) && (LCD_DATA1_PIN == 1) && (LCD_DATA2_PIN == 2) && (LCD_DATA3_PIN == 3) )
-    {
-        /* configure data pins as output */
-        DDR(LCD_DATA0_PORT) |= 0x0F;
+    /* configure data pins as output */
+    DDR(LCD_DATA0_PORT) |= 0xF0;
 
-        /* output high nibble first */
-        dataBits = LCD_DATA0_PORT & 0xF0;
-        LCD_DATA0_PORT = dataBits |((data>>4)&0x0F);
-        lcd_e_toggle();
+    /* output high nibble first */
+    dataBits = LCD_DATA0_PORT & ~0xF0;
+    LCD_DATA0_PORT = dataBits | (data & 0xF0);
+    lcd_e_toggle();
 
-        /* output low nibble */
-        LCD_DATA0_PORT = dataBits | (data&0x0F);
-        lcd_e_toggle();
+    /* output low nibble */
+    LCD_DATA0_PORT = dataBits | (data << 4);
+    lcd_e_toggle();
 
-        /* all data pins high (inactive) */
-        LCD_DATA0_PORT = dataBits | 0x0F;
-    }
-    else
-    {
-        /* configure data pins as output */
-        DDR(LCD_DATA0_PORT) |= _BV(LCD_DATA0_PIN);
-        DDR(LCD_DATA1_PORT) |= _BV(LCD_DATA1_PIN);
-        DDR(LCD_DATA2_PORT) |= _BV(LCD_DATA2_PIN);
-        DDR(LCD_DATA3_PORT) |= _BV(LCD_DATA3_PIN);
-        
-        /* output high nibble first */
-        LCD_DATA3_PORT &= ~_BV(LCD_DATA3_PIN);
-        LCD_DATA2_PORT &= ~_BV(LCD_DATA2_PIN);
-        LCD_DATA1_PORT &= ~_BV(LCD_DATA1_PIN);
-        LCD_DATA0_PORT &= ~_BV(LCD_DATA0_PIN);
-    	if(data & 0x80) LCD_DATA3_PORT |= _BV(LCD_DATA3_PIN);
-    	if(data & 0x40) LCD_DATA2_PORT |= _BV(LCD_DATA2_PIN);
-    	if(data & 0x20) LCD_DATA1_PORT |= _BV(LCD_DATA1_PIN);
-    	if(data & 0x10) LCD_DATA0_PORT |= _BV(LCD_DATA0_PIN);   
-        lcd_e_toggle();
-        
-        /* output low nibble */
-        LCD_DATA3_PORT &= ~_BV(LCD_DATA3_PIN);
-        LCD_DATA2_PORT &= ~_BV(LCD_DATA2_PIN);
-        LCD_DATA1_PORT &= ~_BV(LCD_DATA1_PIN);
-        LCD_DATA0_PORT &= ~_BV(LCD_DATA0_PIN);
-    	if(data & 0x08) LCD_DATA3_PORT |= _BV(LCD_DATA3_PIN);
-    	if(data & 0x04) LCD_DATA2_PORT |= _BV(LCD_DATA2_PIN);
-    	if(data & 0x02) LCD_DATA1_PORT |= _BV(LCD_DATA1_PIN);
-    	if(data & 0x01) LCD_DATA0_PORT |= _BV(LCD_DATA0_PIN);
-        lcd_e_toggle();        
-        
-        /* all data pins high (inactive) */
-        LCD_DATA0_PORT |= _BV(LCD_DATA0_PIN);
-        LCD_DATA1_PORT |= _BV(LCD_DATA1_PIN);
-        LCD_DATA2_PORT |= _BV(LCD_DATA2_PIN);
-        LCD_DATA3_PORT |= _BV(LCD_DATA3_PIN);
-    }
+    /* all data pins high (inactive) */
+    LCD_DATA0_PORT = dataBits | 0xF0;
+
 }
 #else
 #define lcd_write(d,rs) if (rs) *(volatile uint8_t*)(LCD_IO_DATA) = d; else *(volatile uint8_t*)(LCD_IO_FUNCTION) = d;
@@ -224,52 +186,20 @@ static uint8_t lcd_read(uint8_t rs)
         lcd_rs_low();                        /* RS=0: read busy flag */
     lcd_rw_high();                           /* RW=1  read mode      */
     
-    if ( ( &LCD_DATA0_PORT == &LCD_DATA1_PORT) && ( &LCD_DATA1_PORT == &LCD_DATA2_PORT ) && ( &LCD_DATA2_PORT == &LCD_DATA3_PORT )
-      && ( LCD_DATA0_PIN == 0 )&& (LCD_DATA1_PIN == 1) && (LCD_DATA2_PIN == 2) && (LCD_DATA3_PIN == 3) )
-    {
-        DDR(LCD_DATA0_PORT) &= 0xF0;         /* configure data pins as input */
-        
-        lcd_e_high();
-        lcd_e_delay();        
-        data = PIN(LCD_DATA0_PORT) << 4;     /* read high nibble first */
-        lcd_e_low();
-        
-        lcd_e_delay();                       /* Enable 500ns low       */
-        
-        lcd_e_high();
-        lcd_e_delay();
-        data |= PIN(LCD_DATA0_PORT)&0x0F;    /* read low nibble        */
-        lcd_e_low();
-    }
-    else
-    {
-        /* configure data pins as input */
-        DDR(LCD_DATA0_PORT) &= ~_BV(LCD_DATA0_PIN);
-        DDR(LCD_DATA1_PORT) &= ~_BV(LCD_DATA1_PIN);
-        DDR(LCD_DATA2_PORT) &= ~_BV(LCD_DATA2_PIN);
-        DDR(LCD_DATA3_PORT) &= ~_BV(LCD_DATA3_PIN);
-                
-        /* read high nibble first */
-        lcd_e_high();
-        lcd_e_delay();        
-        data = 0;
-        if ( PIN(LCD_DATA0_PORT) & _BV(LCD_DATA0_PIN) ) data |= 0x10;
-        if ( PIN(LCD_DATA1_PORT) & _BV(LCD_DATA1_PIN) ) data |= 0x20;
-        if ( PIN(LCD_DATA2_PORT) & _BV(LCD_DATA2_PIN) ) data |= 0x40;
-        if ( PIN(LCD_DATA3_PORT) & _BV(LCD_DATA3_PIN) ) data |= 0x80;
-        lcd_e_low();
-
-        lcd_e_delay();                       /* Enable 500ns low       */
+    DDR(LCD_DATA0_PORT) &= ~0xF0;         /* configure data pins as input */
     
-        /* read low nibble */    
-        lcd_e_high();
-        lcd_e_delay();
-        if ( PIN(LCD_DATA0_PORT) & _BV(LCD_DATA0_PIN) ) data |= 0x01;
-        if ( PIN(LCD_DATA1_PORT) & _BV(LCD_DATA1_PIN) ) data |= 0x02;
-        if ( PIN(LCD_DATA2_PORT) & _BV(LCD_DATA2_PIN) ) data |= 0x04;
-        if ( PIN(LCD_DATA3_PORT) & _BV(LCD_DATA3_PIN) ) data |= 0x08;        
-        lcd_e_low();
-    }
+    lcd_e_high();
+    lcd_e_delay();        
+    data = PIN(LCD_DATA0_PORT) & 0xF0;     /* read high nibble first */
+    lcd_e_low();
+    
+    lcd_e_delay();                       /* Enable 500ns low       */
+    
+    lcd_e_high();
+    lcd_e_delay();
+    data |= PIN(LCD_DATA0_PORT) >> 4;    /* read low nibble        */
+    lcd_e_low();
+
     return data;
 }
 #else
