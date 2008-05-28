@@ -45,5 +45,8 @@
 #   define wdr()
 #endif
 
+#define LEDON PORTB _RB(PB0)
+#define LEDOFF PORTB _SB(PB0)
+
 #endif   /* ----- #ifndef GLOBAL_FILE_HEADER_INC  ----- */
 

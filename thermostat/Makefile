@@ -63,7 +63,7 @@ OPT = s
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c helpers.c lcd.c lcdcg.c
+SRC = main.c helpers.c lcd.c lcdcg.c ds1621.c
 
 
 # If there is more than one source file, append them above, or modify and
@@ -160,7 +160,7 @@ LDFLAGS += -lm
 # to get a full listing.
 #
 # Programming support using avrdude.
-AVRDUDE = avrdude
+AVRDUDE = sudo avrdude
 
 AVRDUDE_PROGRAMMER = dragon_isp
 AVRDUDE_FUSE_PROGRAMMER = dragon_isp
