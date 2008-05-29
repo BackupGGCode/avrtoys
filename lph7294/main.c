@@ -28,6 +28,7 @@
 
 #include "helpers.h"
 #include "lph.h"
+#include "vs1033.h"
 
 
 #define LEDG PB0
@@ -57,14 +58,30 @@ int main(void)
     uint16_t count = 0;
     char buf[20];
 
+    vsInit();
+
+    uint16_t mode = vsRead(SCI_MODE);
+    LEDRon;
+    sprintf_P(buf, PSTR("Mode 0x%04x"), mode);
+    lphGotoXY(0,1);
+    lphPuts(buf);
+
+    uint16_t stat = vsRead(SCI_STATUS);
+    LEDGon;
+    sprintf_P(buf, PSTR("Status 0x%04x"), stat);
+    lphGotoXY(0,2);
+    lphPuts(buf);
+
     while(1)
     {
         wdr();
 
-        sprintf_P(buf, PSTR("Sec %6d."), count++);
-        lphGotoXY(0,2);
-        lphPuts(buf);
-        delay_ms(100);
+        /*
+         *sprintf_P(buf, PSTR("Sec %6d."), count++);
+         *lphGotoXY(0,2);
+         *lphPuts(buf);
+         *delay_ms(100);
+         */
 
     }
 }
