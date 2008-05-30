@@ -88,5 +88,9 @@ void vsInit(void);
 uint16_t vsRead(uint8_t addr);
 void vsWrite(uint8_t addr, uint16_t val);
 
+// Push data block into VS10xx. Normal size is 32 bytes.
+void vsPushData(uint8_t* block, uint8_t size);
+void vsPushData_p(uint16_t block, uint8_t size);
+
 #endif
 

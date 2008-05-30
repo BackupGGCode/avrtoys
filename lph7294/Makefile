@@ -164,7 +164,7 @@ AVRDUDE_WRITE_FUSE = -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m -U efuse:w:$(EF
 # to get a full listing.
 #
 # Programming support using avrdude.
-AVRDUDE = avrdude
+AVRDUDE = sudo avrdude
 
 AVRDUDE_PROGRAMMER = dragon_isp
 AVRDUDE_FUSE_PROGRAMMER = dragon_isp
