@@ -63,7 +63,7 @@ OPT = s
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = main.c helpers.c lcd.c lcdcg.c ds1621.c
+SRC = main.c helpers.c lcd.c lcdcg.c adc.c
 
 
 # If there is more than one source file, append them above, or modify and

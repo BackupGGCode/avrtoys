@@ -3,7 +3,7 @@
  *
  *       Filename:  main.c
  *
- *    Description:  Dendy joystick to atari adapter
+ *    Description:  Thermostat
  *
  *        Version:  1.0
  *        Created:  Fri Mar 14 17:43:49 MSK 2008
@@ -29,7 +29,7 @@
 #include "helpers.h"
 #include "lcd.h"
 #include "lcdcg.h"
-#include "ds1621.h"
+#include "adc.h"
 
 
 int main(void)
@@ -50,15 +50,7 @@ int main(void)
 
     PORTC |= 0x03;
 
-    /*
-    for(uint8_t i=0; i<16; ++i)
-        lcd_data(i+0xF0);
-    lcd_gotoxy(1,2);
-    */
-
-    ds16Init();
-
-    ds16Start();
+    adcInit();
 
     char outstr[32];
 
@@ -66,10 +58,12 @@ int main(void)
 //    lcd_puts_P("           03:42\n");
 
     int16_t temp;
+    int16_t temp2;
 
     while(1)
     {
         wdr();
+        delay_ms(1000);
 
         /*
          *procAdc();
@@ -79,13 +73,16 @@ int main(void)
          *procDisplay();
          */
 
-        temp = ds16Read();
-        snprintf_P(outstr, 31, PSTR("Temp %6d" "\x08" "C\n"), temp/256);
+        
+        temp = adcRead();
+        for(uint8_t i=0; i<9; i++)
+            temp = (temp + adcRead())/2;
 
+        snprintf_P(outstr, 31, PSTR("Temp 0x%04X" "\x08" "C\n"), temp);
         lcd_gotoxy(0, 2);
         lcd_puts(outstr);
 
     }
 }
 
-
+// vim: sw=4:ts=4:si:et
