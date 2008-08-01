@@ -204,7 +204,7 @@ AVRDUDE_PROGRAMMER = stk200
 # com1 = serial port. Use lpt1 to connect to parallel port.
 # AVRDUDE_PORT = lpt1
 
-#AVRDUDE_WRITE_FUSE = -U lfuse:w:0xEF:m -U hfuse:w:0xDF:m -U efuse:w:0xFF:m
+AVRDUDE_WRITE_FUSE = -U lfuse:w:0x7A:m -U hfuse:w:0xFD:m
 AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
 #AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(TARGET).eep
 
@@ -366,8 +366,10 @@ gccversion :
 
 # Program the device.
 program: $(TARGET).hex $(TARGET).eep
-	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM) $(AVRDUDE_WRITE_FUSE)
+	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
 
+fuse:
+	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FUSE)
 
 # Generate avr-gdb config/init file which does the following:
 #     define the reset signal, load the target file, connect to target, and set

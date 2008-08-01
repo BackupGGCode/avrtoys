@@ -15,9 +15,8 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
-#include <avr/signal.h>
 // #include <avr/wdt.h>
-#include <avr/delay.h>
+#include <util/delay.h>
 
 #include "sintab.h"
 
@@ -25,6 +24,7 @@
 #	define LRED PB0
 #	define LGREEN PB1
 #	define LBLUE PB2
+#   define LWHITE PB3
 #else
 #	define LRED PD5
 #	define LGREEN PD4
@@ -39,10 +39,12 @@
 uint8_t red = 0;
 uint8_t green = 85;
 uint8_t blue = 171;
+uint8_t white = 0;
 
 volatile uint8_t vred = 0;
 volatile uint8_t vgreen = 0;
 volatile uint8_t vblue = 0;
+volatile uint8_t vwhite = 0;
 
 void display_init(void)
 {
@@ -77,7 +79,7 @@ void init_devices(void)
 // Port initializations
 #if defined (__AVR_ATtiny13__)
     PORTB = 0x00;
-    DDRB = _B(LRED) | _B(LGREEN) | _B(LBLUE);
+    DDRB = _B(LRED) | _B(LGREEN) | _B(LBLUE) | _B(LWHITE);
 #else
     PORTD = 0x00;
     DDRD = _B(LRED) | _B(LGREEN) | _B(LBLUE);
@@ -100,11 +102,11 @@ void init_devices(void)
 }
 
 #if defined (__AVR_AT90S2313__)
-INTERRUPT(SIG_OVERFLOW0)
+ISR(SIG_OVERFLOW0)
 #elif defined (__AVR_ATtiny2313__)
-INTERRUPT(SIG_TIMER0_OVF)
+ISR(SIG_TIMER0_OVF)
 #elif defined (__AVR_ATtiny13__)
-INTERRUPT(SIG_OVERFLOW0)
+ISR(SIG_OVERFLOW0)
 #else
 #    error "device not support"
 #endif
@@ -113,9 +115,12 @@ INTERRUPT(SIG_OVERFLOW0)
     vred = pgm_read_byte(sin + red);
     vgreen = pgm_read_byte(sin + green);
     vblue = pgm_read_byte(sin + blue);
+    vwhite = pgm_read_byte(sin + white);
     red++;
     green++;
     blue++;
+    if((vblue & 0x0F) == 0)
+        white++;
 }
 
 // Main function
@@ -124,12 +129,13 @@ int main(void)
 	uint8_t cnt = 0;
 	init_devices();
 	while (1)
-    {
+    {    
 #if defined (__AVR_ATtiny13__)
 		PORTB =
 #else
 		PORTD =
 #endif
+			((cnt < vwhite)?_B(LWHITE):0) | 
 			((cnt < vred)?_B(LRED):0) | 
 			((cnt < vgreen)?_B(LGREEN):0) | 
 			((cnt < vblue)?_B(LBLUE):0);
