@@ -21,13 +21,15 @@
 
 #include "config.h"
 
-#define _TONE(t) (F_CPU / (2L * 8L * (t)))
+#define _TONE(t) (F_CPU / (2L * 256L * (t)))
 
-void beepTone(uint16_t divider);
+void beepTone(uint8_t divider);
 
 void beepOn(void);
 
 void beepOff(void);
+
+#define beepHz(hz) beepTone(_TONE(hz))
 
 #endif
 

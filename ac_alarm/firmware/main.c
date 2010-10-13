@@ -41,6 +41,22 @@ int main(void)
     for(;;)
     {
         wdr();
+        beepHz(2000);
+        beepOn();
+        delay_ms(5);
+        beepOff();
+        delay_ms(1000);
+        /*
+        LEDR_ON();
+        beepTone(_TONE(3333));
+        delay_ms(10);
+        beepTone(_TONE(2500));
+        delay_ms(10);
+        LEDR_OFF();
+        beepTone(_TONE(2000));
+        delay_ms(10);
+        beepTone(_TONE(2500));
+        delay_ms(10);
         LEDR_ON();
         delay_ms(200);
         LEDG_ON();
@@ -49,6 +65,7 @@ int main(void)
         delay_ms(200);
         LEDG_OFF();
         delay_ms(200);
+        */
     }
     return 0;
 }

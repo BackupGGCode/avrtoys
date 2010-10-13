@@ -56,7 +56,7 @@ inline static void SET_DDR(void)
     PORTA = 0xFF;
     DDRA  = 0x00;
     PORTB = 0x00;
-    DDRB  = 0x03;
+    DDRB  = 0x07;
 }
 
 //#define WDT_ENABLE

@@ -21,23 +21,22 @@
 #include "config.h"
 
 
-void beepTone(uint16_t divider)
+void beepTone(uint8_t divider)
 {
-    OCR1A = divider;
-    OCR1B = divider;
+    OCR0A = divider;
 }
 
 void beepOn(void)
 {
-    TCCR1A = (0<<COM1A0) | (1<<COM1B0) | (0<<WGM10);
-    TCCR1B = (1<<WGM12) | (2<<CS10);
+    TCCR0A = (0<<COM0A1) | (1<<COM0A0) | (1<<WGM01);
+    TCCR0B = (4<<CS00);
     //PORTB |= BUZZER;
 }
 
 void beepOff(void)
 {
-    TCCR1A = (0<<COM1A0) | (0<<COM1B0) | (0<<WGM10);
-    TCCR1B = (1<<WGM12) | (2<<CS10);
+    TCCR0A = (0<<COM0A1) | (0<<COM0A0) | (1<<WGM01);
+    TCCR0B = (4<<CS00);
     //PORTB &= ~BUZZER;
 }
 
