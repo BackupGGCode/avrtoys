@@ -44,20 +44,6 @@
  * Pinout configuration
  */
 
-inline static void SET_SEG(uint8_t s)
-{
-    PORTB = (PORTB & 0x08) | (s & 0xF7);
-    if(s & 0x08)
-        PORTD |= (1<<6);
-    else
-        PORTD &= ~(1<<6);
-}
-
-inline static void SET_CELL(uint8_t c)
-{
-    PORTD = (PORTD & ~(7<<3)) | ((c & 7)<<3);
-}
-
 inline static void SET_DDR(void)
 {
     PORTA = 0x03;

@@ -74,6 +74,7 @@ SRC = main.c
 SRC += helpers.c
 SRC += led7.c
 SRC += beep.c
+SRC += twi.c
 
 
 # If there is more than one source file, append them above, or modify and
@@ -455,4 +456,6 @@ tags:
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion coff extcoff \
 	clean clean_list program tags
+
+.SILENT:
 

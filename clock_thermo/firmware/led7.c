@@ -10,24 +10,24 @@
 #define SEG_H (1U<<5)
 
 const uint8_t PROGMEM chartab[] = {
-    ~(SEG_H | SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F), // 0
-    ~(SEG_H | SEG_B | SEG_C), // 1
-    ~(SEG_H | SEG_A | SEG_B | SEG_D | SEG_E | SEG_G), // 2
-    ~(SEG_H | SEG_A | SEG_B | SEG_C | SEG_D | SEG_G), // 3
-    ~(SEG_H | SEG_B | SEG_C | SEG_F | SEG_G), // 4
-    ~(SEG_H | SEG_A | SEG_C | SEG_D | SEG_F | SEG_G), // 5
-    ~(SEG_H | SEG_A | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G), // 6
-    ~(SEG_H | SEG_A | SEG_B | SEG_C), // 7
-    ~(SEG_H | SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G), // 8
-    ~(SEG_H | SEG_A | SEG_B | SEG_C | SEG_D | SEG_F | SEG_G), // 9
-    ~(SEG_H | SEG_A | SEG_B | SEG_D | SEG_E | SEG_F | SEG_G), // A
-    ~(SEG_H | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G), // B
-    ~(SEG_H | SEG_A | SEG_D | SEG_E | SEG_F), // C
-    ~(SEG_H | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G), // D
-    ~(SEG_H | SEG_A | SEG_D | SEG_E | SEG_F | SEG_G), // E
-    ~(SEG_H | SEG_A | SEG_E | SEG_F | SEG_G), // F
-    ~(SEG_H | 0), //
-    ~(SEG_H | SEG_G), // -
+    0xFF^(SEG_H | SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F), // 0
+    0xFF^(SEG_H | SEG_B | SEG_C), // 1
+    0xFF^(SEG_H | SEG_A | SEG_B | SEG_D | SEG_E | SEG_G), // 2
+    0xFF^(SEG_H | SEG_A | SEG_B | SEG_C | SEG_D | SEG_G), // 3
+    0xFF^(SEG_H | SEG_B | SEG_C | SEG_F | SEG_G), // 4
+    0xFF^(SEG_H | SEG_A | SEG_C | SEG_D | SEG_F | SEG_G), // 5
+    0xFF^(SEG_H | SEG_A | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G), // 6
+    0xFF^(SEG_H | SEG_A | SEG_B | SEG_C), // 7
+    0xFF^(SEG_H | SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G), // 8
+    0xFF^(SEG_H | SEG_A | SEG_B | SEG_C | SEG_D | SEG_F | SEG_G), // 9
+    0xFF^(SEG_H | SEG_A | SEG_B | SEG_D | SEG_E | SEG_F | SEG_G), // A
+    0xFF^(SEG_H | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G), // B
+    0xFF^(SEG_H | SEG_A | SEG_D | SEG_E | SEG_F), // C
+    0xFF^(SEG_H | SEG_C | SEG_D | SEG_E | SEG_F | SEG_G), // D
+    0xFF^(SEG_H | SEG_A | SEG_D | SEG_E | SEG_F | SEG_G), // E
+    0xFF^(SEG_H | SEG_A | SEG_E | SEG_F | SEG_G), // F
+    0xFF^(SEG_H | 0), //
+    0xFF^(SEG_H | SEG_G), // -
 };
 
 volatile uint16_t seconds = 0;
