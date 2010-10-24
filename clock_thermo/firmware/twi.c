@@ -10,8 +10,7 @@
 #define SCL0() DDRD |=  (1<<SCL)
 #define SCL1() DDRD &= ~(1<<SCL)
 
-//#define DELAY() do { uint8_t i=250; do { asm (""); } while(i--); } while(0)
-#define DELAY() do { volatile uint8_t i; for(i=0; i<8; i++) ; } while(0)
+#define DELAY() do { uint8_t i; for(i=16; i; i--) asm(""); } while(0)
 
 void twiInit(void)
 {
