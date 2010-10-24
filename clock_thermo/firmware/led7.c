@@ -28,6 +28,7 @@ const uint8_t PROGMEM chartab[] = {
     0xFF^(SEG_H | SEG_A | SEG_E | SEG_F | SEG_G), // F
     0xFF^(SEG_H | 0), //
     0xFF^(SEG_H | SEG_G), // -
+    0xFF^(SEG_H | SEG_A | SEG_B | SEG_F | SEG_G), // deg
 };
 
 volatile uint16_t seconds = 0;
@@ -60,10 +61,11 @@ void led7Char(uint8_t pos, uint8_t code)
 
 void led7Dot(uint8_t pos, uint8_t state)
 {
+    uint8_t* pd = disp+pos;
     if(state)
-        disp[pos] &= ~SEG_H;
+        *pd &= ~SEG_H;
     else
-        disp[pos] |= SEG_H;
+        *pd |= SEG_H;
 }
 
 static void _push_spi(uint8_t data)

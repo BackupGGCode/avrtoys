@@ -10,7 +10,8 @@
 #define SCL0() DDRD |=  (1<<SCL)
 #define SCL1() DDRD &= ~(1<<SCL)
 
-#define DELAY() do { volatile uint8_t i; for(i=0; i<5; i++) ; } while(0)
+//#define DELAY() do { uint8_t i=250; do { asm (""); } while(i--); } while(0)
+#define DELAY() do { volatile uint8_t i; for(i=0; i<8; i++) ; } while(0)
 
 void twiInit(void)
 {
@@ -35,8 +36,8 @@ void twiStop(void)
 twiACK twiSend(uint8_t data)
 {
     twiACK ack;
-    uint8_t i;
-    for(i=0; i<8; i++)
+    uint8_t i = 7;
+    do
     {
         if(data & 0x80) SDA1();
             else SDA0();
@@ -46,6 +47,7 @@ twiACK twiSend(uint8_t data)
         SCL0();
         DELAY();
     }
+    while(i--);
     SDA1();
     SCL1();
     DELAY();
@@ -57,9 +59,9 @@ twiACK twiSend(uint8_t data)
 uint8_t twiReceive(twiACK ack)
 {
     uint8_t d = 0;
-    uint8_t i;
+    uint8_t i = 7;
     SDA1();
-    for(i=0; i<8; i++)
+    do
     {
         SCL1();
         DELAY();
@@ -68,6 +70,7 @@ uint8_t twiReceive(twiACK ack)
         SCL0();
         DELAY();
     }
+    while(i--);
     if(ack == ACK) SDA0();
         else SDA1();
     SCL1();
