@@ -43,7 +43,63 @@ void putInt32(uint32_t val)
 }
 
 
+uint8_t keyCheck(uint8_t key);
+
+static uint8_t key_down;
+uint8_t keyCheck(uint8_t key)
+{
+    uint8_t ckey = GET_KEYS();
+    uint8_t diffkey = ckey ^ key_down;
+    key_down = ckey;
+    return ckey & diffkey & key;
+}
+
+
+/*****************************************************/
 #define DS1307_ADDR 0xD0
+
+/* TODO error checks */
+uint8_t dsRead(uint8_t reg)
+{
+    twiStart();
+    twiSend(DS1307_ADDR | TWI_WR);
+    twiSend(reg);
+    twiStop();
+
+    twiStart();
+    twiSend(DS1307_ADDR | TWI_RD);
+    uint8_t data = twiReceive(NACK);
+    twiStop();
+    return data;
+}
+
+void dsReadBuf(uint8_t reg, char* buf, uint8_t len)
+{
+    twiStart();
+    twiSend(DS1307_ADDR | TWI_WR);
+    twiSend(reg);
+    twiStop();
+
+    twiStart();
+    twiSend(DS1307_ADDR | TWI_RD);
+    while(--len)
+    {
+        *buf++ = twiReceive(ACK);
+    }
+    *buf++ = twiReceive(NACK);
+    twiStop();
+}
+
+void dsWrite(uint8_t reg, uint8_t data)
+{
+    twiStart();
+    twiSend(DS1307_ADDR | TWI_WR);
+    twiSend(reg);
+    twiSend(data);
+    twiStop();
+}
+
+uint8_t dsdata[16];
 
 int main(void)
 {
@@ -75,37 +131,43 @@ int main(void)
     for(;;)
     {
         wdr();
-        twiStart();
-        twiSend(DS1307_ADDR | TWI_WR);
-        twiSend(0);
-        twiStop();
 
-        twiStart();
-        twiSend(DS1307_ADDR | TWI_RD);
-        uint8_t sec = twiReceive(ACK);
-        uint8_t min = twiReceive(ACK);
-        uint8_t hour = twiReceive(NACK); // & 0x3F;
-        twiStop();
+        dsReadBuf(0, dsdata, 3);
 
-        led7Char(0, hour>>4);
-        led7Char(1, hour&15);
-        led7Char(2, min>>4);
-        led7Char(3, min&15);
-        led7Dot(2, (sec&1));
-        led7Dot(3, (sec&1));
+        led7Char(0, (dsdata[2]>>4)&3);
+        led7Char(1, dsdata[2]&15);
+        led7Char(2, dsdata[1]>>4);
+        led7Char(3, dsdata[1]&15);
+        led7Dot (2, (dsdata[0]&1));
+        led7Dot (3, (dsdata[0]&1));
 
-        /*
-        putInt32(seconds);
-        led7Dot(2, (msec<500)?0:1);
-        led7Dot(3, (msec<500)?1:0);
-        if(msec<10)
-            beepOn();
-            //PORTD |= (1<<RELAY);
-        else
-            beepOff();
-            //PORTD &= ~(1<<RELAY);
-        //_delay_ms(1);
-        */
+        uint8_t keys = keyCheck(7);
+        if(keys)
+        {
+            if(keys & 1)
+            {
+                uint8_t hour = dsRead(2) & 0x3F;
+                hour++;
+                if((hour & 0x0F) >= 10)
+                {
+                    hour = ((hour&0x30)+0x10);
+                    if(hour > 0x20) hour = 0;
+                    hour |= 0x40;
+                }
+                dsWrite(2, hour);
+            }
+            if(keys & 2)
+            {
+                uint8_t min = dsRead(1) & 0x7F;
+                min++;
+                if((min & 0x0F) >= 10)
+                {
+                    min = ((min&0x70)+0x10);
+                    if(min > 0x60) min = 0;
+                }
+                dsWrite(1, min);
+            }
+        }
     }
     return 0;
 }

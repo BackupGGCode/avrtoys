@@ -57,6 +57,12 @@ inline static void SET_DDR(void)
     DDRD  = (1<<L_A4) | (1<<L_A3) | (1<<RELAY);
 }
 
+inline static uint8_t GET_KEYS(void)
+{
+    return ~(((PINA & 3)<<1) | ((PINB>>5) & 1)) & 0x07;
+}
+
+
 //#define WDT_ENABLE
 
 #define CYCLES_PER_US ((F_CPU+500000)/1000000) 	// cpu cycles per microsecond
